@@ -2,44 +2,55 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #define PROMPT "simple_shell> "
 #define MAX_LINE 128
 
-int main() {
-  char line[MAX_LINE];
-  while (1) {
-    // Display prompt
-    printf(PROMPT);
-    fflush(stdout);
+/**
+ * main - a simple UNIX command line interpreter
+ * Return: 0 on success, 1 on failure
+ */
+int main(void)
+{
+	char line[MAX_LINE];
 
-    // Read user input
-    if (fgets(line, MAX_LINE, stdin) == NULL) {
-      // Handle EOF (Ctrl+D)
-      printf("\n");
-      break;
-    }
+	while (1)
+	{
+		/* Display prompt */
+		printf(PROMPT);
+		fflush(stdout);
 
-    // Remove newline character
-    line[strcspn(line, "\n")] = '\0';
+		/* Read user input */
+		if (fgets(line, MAX_LINE, stdin) == NULL)
+		{
+			/* Handle EOF (Ctrl+D) */
+			printf("\n");
+			break;
+		}
 
-    // Check for empty command
-    if (strlen(line) == 0) {
-      continue;
-    }
+		/* Remove newline character */
+		line[strcspn(line, "\n")] = '\0';
 
-    // Try to execute command
-    if (fork() == 0) {
-      // Child process
-      execve(line, NULL, environ);
-      // If execve fails, print error and exit
-      perror("Error executing command");
-      exit(1);
-    } else {
-      // Parent process waits for child
-      wait(NULL);
-    }
-  }
+		/* Check for empty command */
+		if (strlen(line) == 0)
+			continue;
 
-  return 0;
+		/* Try to execute command */
+		if (fork() == 0)
+		{
+			/* Child process */
+			execve(line, NULL, environ);
+			/* If execve fails, print error and exit */
+			perror("Error executing command");
+			exit(1);
+		}
+		else
+		{
+			/* Parent process waits for child */
+			wait(NULL);
+		}
+	}
+
+	return (0);
 }
