@@ -1,95 +1,103 @@
 #include "shell.h"
 
 /**
- * exit_shell - exits the shell
- * @shell: Structure containing potential arguments. Used to maintain
- *      	constant function prototype.
- *  Return: exits with a given exit status
- *     	(0) if shell.argv[0] != "exit"
+ * _myexit - exits the shell
+ * @info: pointer to structure containing arguments and other variables
+ * Return: -2 if info.argv[0] == "exit", 1 if invalid exit argument, 0 otherwise
  */
-int exit_shell(shell_t *shell)
+int _myexit(info_t *info)
 {
-    int exit_status;
+	int exitcheck;
 
-    if (shell->argv[1])  /* If there is an exit argument */
-    {
-   	 exit_status = str_to_int(shell->argv[1]);
-   	 if (exit_status == -1)
-   	 {
-   		 shell->status = 2;
-   		 print_error(shell, "Illegal number: ");
-   		 _eputs(shell->argv[1]);
-   		 _eputchar('\n');
-   		 return (1);
-   	 }
-   	 shell->err_num = exit_status;
-   	 return (-2);
-    }
-    shell->err_num = -1;
-    return (-2);
+	if (info->argv[1]) /* check if there is an exit argument */
+	{
+		exitcheck = _erratoi(info->argv[1]); /* convert argument to integer */
+		if (exitcheck == -1) /* check if conversion failed */
+		{
+			info->status = 2; /* set status to 2 */
+			print_error(info, "Illegal number: "); /* print error message */
+			_eputs(info->argv[1]); /* print argument */
+			_eputchar('\n'); /* print newline */
+			return (1); /* return 1 */
+		}
+		info->err_num = exitcheck; /* set err_num to exit argument */
+		return (-2); /* return -2 to indicate exit */
+	}
+	info->err_num = -1; /* set err_num to -1 */
+	return (-2); /* return -2 to indicate exit */
 }
 
 /**
- * change_dir - changes the current directory of the process
- * @shell: Structure containing potential arguments. Used to maintain
- *      	constant function prototype.
- *  Return: Always 0
+ * _mycd - changes the current directory of the process
+ * @info: pointer to structure containing arguments and other variables
+ * Return: 0 on success, 1 on failure
  */
-int change_dir(shell_t *shell)
+int _mycd(info_t *info)
 {
-    char *s, *dir, buffer[1024];
-    int chdir_ret;
+	char *s, *dir, buffer[1024];
+	int chdir_ret;
 
-    s = getcwd(buffer, 1024);
-    if (!s)
-   	 _puts("TODO: >>getcwd failure emsg here<<\n");
-    if (!shell->argv[1])
-    {
-   	 dir = _getenv(shell, "HOME=");
-   	 if (!dir)
-   		 chdir_ret = chdir("/");
-   	 else
-   		 chdir_ret = chdir(dir);
-    }
-    else if (_strcmp(shell->argv[1], "-") == 0)
-    {
-   	 if (!_getenv(shell, "OLDPWD="))
-   	 {
-   		 _puts(s);
-   		 _putchar('\n');
-   		 return (1);
-   	 }
-   	 _puts(_getenv(shell, "OLDPWD=")), _putchar('\n');
-   	 chdir_ret = chdir(_getenv(shell, "OLDPWD="));
-    }
-    else
-   	 chdir_ret = chdir(shell->argv[1]);
-    if (chdir_ret == -1)
-    {
-   	 print_error(shell, "can't cd to ");
-   	 _eputs(shell->argv[1]), _eputchar('\n');
-    }
-    else
-    {
-   	 _setenv(shell, "OLDPWD", _getenv(shell, "PWD="));
-   	 _setenv(shell, "PWD", getcwd(buffer, 1024));
-    }
-    return (0);
+	s = getcwd(buffer, 1024); /* get current working directory */
+	if (!s) /* check if getcwd failed */
+		_puts("Error: getcwd failed\n"); /* print error message */
+	if (!info->argv[1]) /* check if no argument is given */
+	{
+		dir = _getenv(info, "HOME="); /* get home directory from environment */
+		if (!dir) /* check if home directory is not found */
+			chdir_ret = chdir((dir = _getenv(info, "PWD=")) ? dir : "/"); /* use current directory or root directory */
+		else
+			chdir_ret = chdir(dir); /* use home directory */
+	}
+	else if (_strcmp(info->argv[1], "-") == 0) /* check if argument is "-" */
+	{
+		if (!_getenv(info, "OLDPWD=")) /* check if old directory is not found */
+		{
+			_puts(s); /* print current directory */
+			_putchar('\n'); /* print newline */
+			return (1); /* return 1 */
+		}
+		_puts(_getenv(info, "OLDPWD=")); /* print old directory */
+		_putchar('\n'); /* print newline */
+		chdir_ret = chdir((dir = _getenv(info, "OLDPWD=")) ? dir : "/"); /* use old directory or root directory */
+	}
+	else /* otherwise */
+		chdir_ret = chdir(info->argv[1]); /* use argument as directory */
+	if (chdir_ret == -1) /* check if chdir failed */
+	{
+		print_error(info, "can't cd to "); /* print error message */
+		_eputs(info->argv[1]); /* print argument */
+		_eputchar('\n'); /* print newline */
+		return (1); /* return 1 */
+	}
+	else /* otherwise */
+	{
+		_setenv(info, "OLDPWD", _getenv(info, "PWD=")); /* update old directory in environment */
+		_setenv(info, "PWD", getcwd(buffer, 1024)); /* update current directory in environment */
+	}
+	return (0); /* return 0 */
 }
 
 /**
- * show_help - shows the help message for the shell
- * @shell: Structure containing potential arguments. Used to maintain
- *      	constant function prototype.
- *  Return: Always 0
+ * _myhelp - displays help information for built-in commands
+ * @info: pointer to structure containing arguments and other variables
+ * Return: 0 on success, 1 on failure
  */
-int show_help(shell_t *shell)
+int _myhelp(info_t *info)
 {
-    char **arg_array;
+	char **arg_array;
 
-    arg_array = shell->argv;
-    _puts("help call works. Function not yet implemented \n");
-    if (0)
-   	 _puts(*arg_array); /* temp att_unused workaround */
-    return (0);
+	arg_array = info->argv; /* get arguments array */
+	if (!arg_array[1]) /* check if no argument is given */
+	{
+		_puts("Usage: help [BUILTIN]\n"); /* print usage message */
+		_puts("Displays information about built-in commands.\n"); /* print description */
+		_puts("BUILTIN: the name of a built-in command\n"); /* print argument explanation */
+		return (0); /* return 0 */
+	}
+	else /* otherwise */
+	{
+		/* TODO: implement help for each built-in command */
+		_puts("Sorry, help for this command is not yet implemented.\n"); /* print placeholder message */
+		return (1); /* return 1 */
+	}
 }
