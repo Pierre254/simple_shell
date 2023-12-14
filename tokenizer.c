@@ -1,12 +1,30 @@
 #include "shell.h"
 
 /**
- * **strtow - splits a string into words. Repeat delimiters are ignored
+ * is_delim - checks if a character is a digit or an underscore or a whitespace
+ * or any other delimiter
+ * @c: the character to check
+ * @d: the delimeter string
+ * Return: 1 if true, 0 if false
+ */
+int is_delim(char c, char *d)
+{
+	int i;
+
+	for (i = 0; d[i] != '\0'; i++)
+	{
+		if (c == d[i])
+			return (1);
+	}
+	return (0);
+}
+
+/**
+ * strtow - splits a string into words. Repeat delimiters are ignored
  * @str: the input string
  * @d: the delimeter string
  * Return: a pointer to an array of strings, or NULL on failure
  */
-
 char **strtow(char *str, char *d)
 {
 	int i, j, k, m, numwords = 0;
@@ -49,7 +67,7 @@ char **strtow(char *str, char *d)
 }
 
 /**
- * **strtow2 - splits a string into words
+ * strtow2 - splits a string into words
  * @str: the input string
  * @d: the delimeter
  * Return: a pointer to an array of strings, or NULL on failure
@@ -63,7 +81,7 @@ char **strtow2(char *str, char d)
 		return (NULL);
 	for (i = 0; str[i] != '\0'; i++)
 		if ((str[i] != d && str[i + 1] == d) ||
-		    (str[i] != d && !str[i + 1]) || str[i + 1] == d)
+		    (str[i] != d && !str[i + 1]))
 			numwords++;
 	if (numwords == 0)
 		return (NULL);
@@ -72,10 +90,10 @@ char **strtow2(char *str, char d)
 		return (NULL);
 	for (i = 0, j = 0; j < numwords; j++)
 	{
-		while (str[i] == d && str[i] != d)
+		while (str[i] == d)
 			i++;
 		k = 0;
-		while (str[i + k] != d && str[i + k] && str[i + k] != d)
+		while (str[i + k] != d && str[i + k])
 			k++;
 		s[j] = malloc((k + 1) * sizeof(char));
 		if (!s[j])

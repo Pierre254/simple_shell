@@ -1,48 +1,41 @@
 #include "shell.h"
 
-// Enable some compiler optimizations
-#pragma GCC optimize("Ofast")
-#pragma GCC optimize("unroll-loops")
-#pragma GCC optimize("inline")
-#pragma GCC optimize("tree-vectorize")
-
-/**
- * main - entry point
- * @ac: arg count
- * @av: arg vector
- *
- * Return: 0 on success, 1 on error
- */
-int main(register int ac, register char **av)
+/* Main entry point */
+int main(int argc, char **argv)
 {
 	info_t info[] = { INFO_INIT };
-	register int fd = 2;
+	int fd = STDIN_FILENO;
 
-	asm ("mov %1, %0\n\t"
-	     "add $3, %0"
-	     : "=r" (fd)
-	     : "r" (fd));
-
-	if (ac == 2)
+	/* Check if there is an argument */
+	if (argc == 2)
 	{
-		fd = open(av[1], O_RDONLY);
+		/* Open the argument file for reading */
+		fd = open(argv[1], O_RDONLY);
 		if (fd == -1)
 		{
+			/* Handle the error according to the errno value */
 			if (errno == EACCES)
 				exit(126);
 			if (errno == ENOENT)
 			{
-				// Use formatted output instead of string concatenation
-				fprintf(stderr, "%s: 0: Can't open %s\n", av[0], av[1]);
-				_eputchar(BUF_FLUSH);
+				fprintf(stderr, "%s: 0: Can't open %s\n", argv[0], argv[1]);
 				exit(127);
 			}
 			return (EXIT_FAILURE);
 		}
+		/* Set the read file descriptor to the opened file */
 		info->readfd = fd;
 	}
+
+	/* Populate the environment list */
 	populate_env_list(info);
+
+	/* Read the history from the file */
 	read_history(info);
-	hsh(info, av);
+
+	/* Start the shell */
+	hsh(info, argv);
+
+	/* Return success */
 	return (EXIT_SUCCESS);
 }

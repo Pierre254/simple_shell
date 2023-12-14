@@ -1,5 +1,5 @@
-#ifndef _SHELL_H_
-#define _SHELL_H_
+#ifndef SIMPLE_SHELL_H
+#define SIMPLE_SHELL_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,68 +12,29 @@
 #include <fcntl.h>
 #include <errno.h>
 
-/* for read/write buffers */
-#define READ_BUF_SIZE 1024
-#define WRITE_BUF_SIZE 1024
-#define BUF_FLUSH -1
+#define BUFFER_SIZE 1024
+#define CMD_NORMAL 0
+#define CMD_OR 1
+#define CMD_AND 2
+#define CMD_CHAIN 3
 
-/* for command chaining */
-#define CMD_NORM	0
-#define CMD_OR		1
-#define CMD_AND		2
-#define CMD_CHAIN	3
-
-/* for convert_number() */
-#define CONVERT_LOWERCASE	1
-#define CONVERT_UNSIGNED	2
-
-/* 1 if using system getline() */
 #define USE_GETLINE 0
 #define USE_STRTOK 0
 
-#define HIST_FILE	".simple_shell_history"
-#define HIST_MAX	4096
+#define HISTORY_FILE ".simple_shell_history"
+#define HISTORY_MAX 4096
 
 extern char **environ;
 
-
-/**
- * struct liststr - singly linked list
- * @num: the number field
- * @str: a string
- * @next: points to the next node
- */
-typedef struct liststr
-{
+/** A struct to represent a linked list node */
+typedef struct ListNode {
 	int num;
 	char *str;
-	struct liststr *next;
-} list_t;
+	struct ListNode *next;
+} ListNode;
 
-/**
- *struct passinfo - contains pseudo-arguements to pass into a function,
- *		allowing uniform prototype for function pointer struct
- *@arg: a string generated from getline containing arguements
- *@argv: an array of strings generated from arg
- *@path: a string path for the current command
- *@argc: the argument count
- *@line_count: the error count
- *@err_num: the error code for exit()s
- *@linecount_flag: if on count this line of input
- *@fname: the program filename
- *@env: linked list local copy of environ
- *@environ: custom modified copy of environ from LL env
- *@history: the history node
- *@alias: the alias node
- *@env_changed: on if environ was changed
- *@status: the return status of the last exec'd command
- *@cmd_buf: address of pointer to cmd_buf, on if chaining
- *@cmd_buf_type: CMD_type ||, &&, ;
- *@readfd: the fd from which to read line input
- *@histcount: the history line number count
- */
-typedef struct passinfo
-{
+/** A struct to store information about a command */
+typedef struct CommandInfo {
 	char *arg;
 	char **argv;
 	char *path;
@@ -82,154 +43,192 @@ typedef struct passinfo
 	int err_num;
 	int linecount_flag;
 	char *fname;
-	list_t *env;
-	list_t *history;
-	list_t *alias;
+	ListNode *env;
+	ListNode *history;
+	ListNode *alias;
 	char **environ;
 	int env_changed;
 	int status;
 
-	char **cmd_buf; /* pointer to cmd ; chain buffer, for memory mangement */
-	int cmd_buf_type; /* CMD_type ||, &&, ; */
+	char **cmd_buf;
+	int cmd_buf_type;
 	int readfd;
 	int histcount;
-} info_t;
+} CommandInfo;
 
-#define INFO_INIT \
-{NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, \
-	0, 0, 0}
-
-/**
- *struct builtin - contains a builtin string and related function
- *@type: the builtin command flag
- *@func: the function
- */
-typedef struct builtin
-{
+/** A struct to represent a builtin command */
+typedef struct BuiltinCommand {
 	char *type;
-	int (*func)(info_t *);
-} builtin_table;
+	int (*func)(CommandInfo *);
+} BuiltinCommand;
 
+/* Define the shell_t type as an alias for struct shell */
+typedef struct shell shell_t;
 
-/* toem_shloop.c */
-int hsh(info_t *, char **);
-int find_builtin(info_t *);
-void find_cmd(info_t *);
-void fork_cmd(info_t *);
+/** A struct to represent a shell instance */
+struct shell {
+	/* Add the fields that you need for your shell_t type */
+	/* For example, you can have a pointer to a CommandInfo struct */
+	CommandInfo *cmdInfo;
+	/* You can also have other fields, such as flags, counters, etc. */
+	int exit_flag;
+	int error_count;
+};
 
-/* toem_parser.c */
-int is_cmd(info_t *, char *);
-char *dup_chars(char *, int, int);
-char *find_path(info_t *, char *, char *);
+/* Declare the function that loops and interprets commands */
+int shellLoop(char **args);
 
-/* loophsh.c */
-int loophsh(char **);
+/* Declare the function that finds and executes a builtin command */
+int findBuiltin(CommandInfo *cmdInfo);
 
-/* toem_errors.c */
-void _eputs(char *);
-int _eputchar(char);
-int _putfd(char c, int fd);
-int _putsfd(char *str, int fd);
+/* Declare the function that finds and executes a regular command */
+void findCommand(CommandInfo *cmdInfo);
 
-/* toem_string.c */
-int _strlen(char *);
-int _strcmp(char *, char *);
-char *starts_with(const char *, const char *);
-char *_strcat(char *, char *);
+/* Declare the function that forks and executes a command */
+void forkCommand(CommandInfo *cmdInfo);
 
-/* toem_string1.c */
-char *_strcpy(char *, char *);
-char *_strdup(const char *);
-void _puts(char *);
-int _putchar(char);
+/* Declare the function that checks if a string is a command */
+int isCommand(CommandInfo *cmdInfo, char *cmd);
 
-/* toem_exits.c */
-char *_strncpy(char *, char *, int);
-char *_strncat(char *, char *, int);
-char *_strchr(char *, char);
+/* Declare the function that duplicates a substring of characters */
+char *duplicateChars(char *str, int start, int end);
 
-/* toem_tokenizer.c */
-char **strtow(char *, char *);
-char **strtow2(char *, char);
+/* Declare the function that finds the path of a command */
+char *findPath(CommandInfo *cmdInfo, char *cmd, char *envPath);
 
-/* toem_realloc.c */
-char *_memset(char *, char, unsigned int);
-void ffree(char **);
-void *_realloc(void *, unsigned int, unsigned int);
+/* Declare the function that outputs an error message */
+void errorOutput(char *message);
 
-/* toem_memory.c */
-int bfree(void **);
+/* Declare the function that writes a string to a file descriptor */
+int writeOutput(char *str, int fd);
 
-/* toem_atoi.c */
-int interactive(info_t *);
-int is_delim(char, char *);
-int _isalpha(int);
-int _atoi(char *);
+/* Declare the function that prints a string to a file descriptor */
+int printOutput(char *str, int fd);
 
-/* toem_errors1.c */
-int _erratoi(char *);
-void print_error(info_t *, char *);
-int print_d(int, int);
-char *convert_number(long int, int, int);
-void remove_comments(char *);
+/* Declare the function that returns the length of a string */
+int strLength(char *str);
 
-/* toem_builtin.c */
-int _myexit(info_t *);
-int _mycd(info_t *);
-int _myhelp(info_t *);
+/* Declare the function that compares two strings */
+int strCompare(char *str1, char *str2);
 
-/* toem_builtin1.c */
-int _myhistory(info_t *);
-int _myalias(info_t *);
+/* Declare the function that checks if a string starts with a prefix */
+char *startsWith(const char *str, const char *prefix);
 
-/*toem_getline.c */
-ssize_t get_input(info_t *);
-int _getline(info_t *, char **, size_t *);
-void sigintHandler(int);
+/* Declare the function that concatenates two strings */
+char *concatenateStrings(char *str1, char *str2);
 
-/* toem_getinfo.c */
-void clear_info(info_t *);
-void set_info(info_t *, char **);
-void free_info(info_t *, int);
+/* Declare the function that copies a string to another string */
+char *copyString(char *dest, char *src);
 
-/* toem_environ.c */
-char *_getenv(info_t *, const char *);
-int _myenv(info_t *);
-int _mysetenv(info_t *);
-int _myunsetenv(info_t *);
-int populate_env_list(info_t *);
+/* Declare the function that duplicates a string */
+char *duplicateString(const char *str);
 
-/* toem_getenv.c */
-char **get_environ(info_t *);
-int _unsetenv(info_t *, char *);
-int _setenv(info_t *, char *, char *);
+/* Declare the function that prints a string to stdout */
+void printString(char *str);
 
-/* toem_history.c */
-char *get_history_file(info_t *info);
-int write_history(info_t *info);
-int read_history(info_t *info);
-int build_history_list(info_t *info, char *buf, int linecount);
-int renumber_history(info_t *info);
+/* Declare the function that prints a character to stdout */
+int printChar(char character);
 
-/* toem_lists.c */
-list_t *add_node(list_t **, const char *, int);
-list_t *add_node_end(list_t **, const char *, int);
-size_t print_list_str(const list_t *);
-int delete_node_at_index(list_t **, unsigned int);
-void free_list(list_t **);
+/* Declare the function that copies a substring to another string */
+char *copySubstring(char *dest, char *src, int length);
 
-/* toem_lists1.c */
-size_t list_len(const list_t *);
-char **list_to_strings(list_t *);
-size_t print_list(const list_t *);
-list_t *node_starts_with(list_t *, char *, char);
-ssize_t get_node_index(list_t *, list_t *);
+/* Declare the function that concatenates a substring to another string */
+char *concatenateSubstring(char *dest, char *src, int length);
 
-/* toem_vars.c */
-int is_chain(info_t *, char *, size_t *);
-void check_chain(info_t *, char *, size_t *, size_t, size_t);
-int replace_alias(info_t *);
-int replace_vars(info_t *);
-int replace_string(char **, char *);
+/* Declare the function that finds a character in a string */
+char *findCharacter(char *str, char character);
 
-#endif
+/* Declare the function that tokenizes a string using a delimiter */
+char **tokenizeString(char *str, char *delimiter);
+
+/* Declare the function that tokenizes a string using a single character delimiter */
+char **tokenizeString2(char *str, char delimiter);
+
+/* Declare the function that sets a block of memory to a value */
+char *memSet(char *block, char value, unsigned int size);
+
+/* Declare the function that frees a block of memory */
+void freeMemory(char **ptr);
+
+/* Declare the function that resizes a block of memory */
+void *resizeMemory(void *ptr, unsigned int oldSize, unsigned int newSize);
+
+/* Declare the function that frees a block of memory and sets it to NULL */
+int freeBlock(void **block);
+
+/* Declare the function that interprets commands in interactive mode */
+int interpretInteractive(CommandInfo *cmdInfo);
+
+/* Declare the function that checks if a character is a delimiter */
+int isDelimiter(char character, char *delimiters);
+
+/* Declare the function that checks if a character is alphabetic */
+int isAlphabetic(int character);
+
+/* Declare the function that converts a string to an integer */
+int convertToInteger(char *str);
+
+/* Declare the function that parses an integer and handles errors */
+int parseIntError(char *str);
+
+/* Declare the function that displays an error message with command info */
+void displayError(CommandInfo *cmdInfo, char *message);
+
+/* Declare the function that prints a decimal number to a file descriptor */
+int printDecimal(int number, int fd);
+
+/* Declare the function that converts a number to a string */
+char *convertNumber(long int value, int lowercase, int unsignedFlag);
+
+/* Declare the function that removes comments from a string */
+void removeComments(char *str);
+
+/* Declare the function that exits the shell */
+int exitShell(CommandInfo *cmdInfo);
+
+/* Declare the function that changes the current directory */
+int changeDirectory(CommandInfo *cmdInfo);
+
+/* Declare the function that displays the help message */
+int displayHelp(CommandInfo *cmdInfo);
+
+/* Declare the function that displays the history list */
+int displayHistory(CommandInfo *cmdInfo);
+
+/* Declare the function that manages the alias list */
+int manageAlias(CommandInfo *cmdInfo);
+
+/* Declare the function that gets the input from stdin */
+ssize_t getInput(CommandInfo *cmdInfo);
+
+/* Declare the function that gets the input from a file */
+int getLineInput(CommandInfo *cmdInfo, char **buffer, size_t *size);
+
+/* Declare the function that handles the interrupt signal */
+void handleInterruptSignal(int signal);
+
+/* Declare the function that clears the command info */
+void clearCommandInfo(CommandInfo *cmdInfo);
+
+/* Declare the function that sets the command info */
+void setCommandInfo(CommandInfo *cmdInfo, char **args);
+
+/* Declare the function that frees the command info */
+void freeCommandInfo(CommandInfo *cmdInfo, int flag);
+
+/* Declare the function that checks if a command is a chain */
+int isCommandChain(CommandInfo *cmdInfo, char *input, size_t *index);
+
+/* Declare the function that checks the type of a command chain */
+void checkCommandChain(CommandInfo *cmdInfo, char *input, size_t *index, size_t length, size_t max);
+
+/* Declare the function that replaces aliases in a command */
+int replaceAlias(CommandInfo *cmdInfo);
+
+/* Declare the function that replaces variables in a command */
+int replaceVariables(CommandInfo *cmdInfo);
+
+/* Declare the function that replaces a string with another string */
+int replaceString(char **str, char *replacement);
+
+#endif /* SIMPLE_SHELL_H */
