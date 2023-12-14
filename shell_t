@@ -1,0 +1,25 @@
+// Define shell_t before using it
+typedef struct {
+    // Add members as needed
+    // For example:
+    char username[50];
+    char current_directory[256];
+    // Add more members as needed for your shell
+} shell_t;
+
+// Now you can use shell_t in your functions
+int show_history(shell_t *shell) {
+    // Function implementation
+}
+
+int remove_alias(shell_t *shell, char *str) {
+    // Function implementation
+}
+
+int add_alias(shell_t *shell, char *str) {
+    // Function implementation
+}
+
+int manage_alias(shell_t *shell) {
+    // Function implementation
+}
